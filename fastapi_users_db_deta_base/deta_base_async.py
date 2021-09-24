@@ -1,10 +1,11 @@
 from types import SimpleNamespace
+from functools import partial
 
 
 def wrap_async(loop, func):
     async def wrapped(*args, **kwargs):
         result = await loop.run_in_executor(
-            None, func, *args, **kwargs)
+            None, partial(func, *args, **kwargs))
         return result
     return wrapped
 

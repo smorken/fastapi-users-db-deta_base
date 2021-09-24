@@ -4,28 +4,27 @@ import pytest
 import asyncio
 
 from fastapi_users_db_deta_base import DetaBaseUserDatabase
-from fastapi_users_db_deta_base import deta_base_helpers
+from fastapi_users_db_deta_base import deta_base_async
 from tests.mock_deta_base import MockDetaBase
 from tests.conftest import UserDB, UserDBOAuth
 
 
 @pytest.fixture
 async def deta_base_user_db() -> AsyncGenerator[DetaBaseUserDatabase, None]:
-    loop = asyncio.new_event_loop()
-    asyncio.set_event_loop(loop)
-    yield await deta_base_helpers.wrap_async(
+    loop = asyncio.get_event_loop()
+    yield await deta_base_async.wrap_async(
         loop, lambda: DetaBaseUserDatabase(
-            UserDB, deta_base_helpers.wrap_deta_base_async(
+            UserDB, deta_base_async.wrap_deta_base_async(
                 loop, MockDetaBase())))()
 
 
 @pytest.fixture
 async def deta_base_user_db_oauth() -> AsyncGenerator[DetaBaseUserDatabase, None]:
-    loop = asyncio.new_event_loop()
-    asyncio.set_event_loop(loop)
-    yield await deta_base_helpers.wrap_async(
-        loop, lambda: deta_base_helpers.wrap_deta_base_async(
-            loop, MockDetaBase()))()
+    loop = asyncio.get_event_loop()
+    yield await deta_base_async.wrap_async(
+        loop, lambda: DetaBaseUserDatabase(
+            UserDBOAuth, deta_base_async.wrap_deta_base_async(
+                loop, MockDetaBase())))()
 
 
 @pytest.mark.asyncio
@@ -64,14 +63,8 @@ async def test_queries(deta_base_user_db: DetaBaseUserDatabase[UserDB]):
     assert email_user.id == user_db.id
 
     # Exception when inserting existing email
-    with pytest.raises():
+    with pytest.raises(ValueError):
         await deta_base_user_db.create(user)
-
-    # Exception when inserting non-nullable fields
-    with pytest.raises():
-        # Use construct to bypass Pydantic validation
-        wrong_user = UserDB.construct(hashed_password="aaa")
-        await deta_base_user_db.create(wrong_user)
 
     # Unknown user
     unknown_user = await deta_base_user_db.get_by_email("galahad@camelot.bt")

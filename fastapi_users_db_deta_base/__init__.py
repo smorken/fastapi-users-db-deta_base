@@ -6,7 +6,7 @@ from pydantic import UUID4
 
 from fastapi_users.db.base import BaseUserDatabase
 from fastapi_users.models import UD
-from fastapi_users_db_deta_base import deta_base_helpers
+from fastapi_users_db_deta_base import deta_base_async
 __version__ = "0.0.0"
 
 
@@ -33,16 +33,16 @@ class DetaBaseUserDatabase(BaseUserDatabase[UD]):
 
     async def get_by_email(self, email: str) -> Optional[UD]:
         """Get a single user by email."""
-        user = await deta_base_helpers.looped_fetch(
+        user = await deta_base_async.looped_fetch(
             self.async_deta_base.fetch,
             return_first_match=True,
-            query={"email": email})
+            query={"email": email.lower()})
 
         return self.user_db_model(**user) if user else None
 
     async def get_by_oauth_account(self, oauth: str, account_id: str) -> Optional[UD]:
         """Get a single user by OAuth account id."""
-        user = await deta_base_helpers.looped_fetch(
+        user = await deta_base_async.looped_fetch(
             self.async_deta_base.fetch,
             return_first_match=True,
             query={
@@ -54,13 +54,20 @@ class DetaBaseUserDatabase(BaseUserDatabase[UD]):
 
     async def create(self, user: UD) -> UD:
         """Create a user."""
-        await self.async_deta_base.put(
+        data = user.dict()
+        data["email"] = data["email"].lower()
+        if await self.get_by_email(data["email"]):
+            raise ValueError()
+        await self.async_deta_base.insert(
             data=user.dict(), key=user.id)
         return user
 
     async def update(self, user: UD) -> UD:
         """Update a user."""
-        await self.create(user)
+        data = user.dict()
+        data["email"] = data["email"].lower()
+        await self.async_deta_base.put(
+            data=user.dict(), key=user.id)
         return user
 
     async def delete(self, user: UD) -> None:

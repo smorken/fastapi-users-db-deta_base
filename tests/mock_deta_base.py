@@ -1,8 +1,7 @@
 from types import SimpleNamespace
 
 
-class MockDetaBase():
-
+class MockDetaBase:
     def __init__(self):
         self._data_by_key = {}
 
@@ -29,15 +28,16 @@ class MockDetaBase():
         raise NotImplementedError()
 
     def fetch(self, query=None, limit=1000, last=None):
-
         def match_email(v, query):
             return "email" in query and v["email"] == query["email"]
 
         def match_oauth(v, q):
-            if ("oauth_accounts.oauth_name" in q):
+            if "oauth_accounts.oauth_name" in q:
                 for o in v["oauth_accounts"]:
-                    if (o["oauth_name"] == q["oauth_accounts.oauth_name"] and
-                        o["account_id"] == q["oauth_accounts.account_id"]):
+                    if (
+                        o["oauth_name"] == q["oauth_accounts.oauth_name"]
+                        and o["account_id"] == q["oauth_accounts.account_id"]
+                    ):
                         return True
             return False
 
@@ -48,6 +48,5 @@ class MockDetaBase():
                 break
 
         return SimpleNamespace(
-            count=1 if match else 0,
-            last=None,
-            items=[match] if match else [])
+            count=1 if match else 0, last=None, items=[match] if match else []
+        )

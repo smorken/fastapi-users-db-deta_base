@@ -13,18 +13,22 @@ from tests.conftest import UserDB, UserDBOAuth
 async def deta_base_user_db() -> AsyncGenerator[DetaBaseUserDatabase, None]:
     loop = asyncio.get_event_loop()
     yield await deta_base_async.wrap_async(
-        loop, lambda: DetaBaseUserDatabase(
-            UserDB, deta_base_async.wrap_deta_base_async(
-                loop, MockDetaBase())))()
+        loop,
+        lambda: DetaBaseUserDatabase(
+            UserDB, deta_base_async.wrap_deta_base_async(loop, MockDetaBase())
+        ),
+    )()
 
 
 @pytest.fixture
 async def deta_base_user_db_oauth() -> AsyncGenerator[DetaBaseUserDatabase, None]:
     loop = asyncio.get_event_loop()
     yield await deta_base_async.wrap_async(
-        loop, lambda: DetaBaseUserDatabase(
-            UserDBOAuth, deta_base_async.wrap_deta_base_async(
-                loop, MockDetaBase())))()
+        loop,
+        lambda: DetaBaseUserDatabase(
+            UserDBOAuth, deta_base_async.wrap_deta_base_async(loop, MockDetaBase())
+        ),
+    )()
 
 
 @pytest.mark.asyncio
@@ -136,5 +140,7 @@ async def test_queries_oauth(
     assert oauth_user.id == user.id
 
     # Unknown OAuth account
-    unknown_oauth_user = await deta_base_user_db_oauth.get_by_oauth_account("foo", "bar")
+    unknown_oauth_user = await deta_base_user_db_oauth.get_by_oauth_account(
+        "foo", "bar"
+    )
     assert unknown_oauth_user is None

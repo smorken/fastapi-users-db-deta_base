@@ -34,10 +34,9 @@ class MockDetaBase:
         def match_oauth(v, q):
             if "oauth_accounts.oauth_name" in q:
                 for o in v["oauth_accounts"]:
-                    if (
-                        o["oauth_name"] == q["oauth_accounts.oauth_name"]
-                        and o["account_id"] == q["oauth_accounts.account_id"]
-                    ):
+                    oauth_match = o["oauth_name"] == q["oauth_accounts.oauth_name"]
+                    oauth_match &= o["account_id"] == q["oauth_accounts.account_id"]
+                    if oauth_match:
                         return True
             return False
 

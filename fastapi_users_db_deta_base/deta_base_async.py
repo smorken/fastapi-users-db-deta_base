@@ -43,6 +43,6 @@ async def looped_fetch(fetch, query):
         res = await fetch(query, last)
         if res.count > 0:
             return res.items[0]
-        if not last:
+        if not res.last:
             return None
         last = res.last

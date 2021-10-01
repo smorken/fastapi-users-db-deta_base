@@ -1,4 +1,37 @@
 from types import SimpleNamespace
+from functools import partial
+
+
+def _wrap_async(loop, func):
+    """Wraps the specified function as an async function
+
+    :param loop: event loop to pass to asyncio.run_in_executor
+    :param func: function to wrap
+    """
+
+    async def wrapped(*args, **kwargs):
+        result = await loop.run_in_executor(None, partial(func, *args, **kwargs))
+        return result
+
+    return wrapped
+
+
+def _wrap_deta_base_async(loop, deta_base):
+    """Wraps a deta Base object replacing each of the Base methods with
+    async methods.
+
+    :param loop: event loop to pass to asyncio.run_in_executor
+    :param deta_base: a deta Base instance
+    :return: object mimicing deta Base, but with async methods
+    """
+    methods = ["put", "get", "delete", "insert", "put_many", "update", "fetch"]
+    return SimpleNamespace(
+        **{name: _wrap_async(loop, getattr(deta_base, name)) for name in methods}
+    )
+
+
+def get_async_mock_deta_base(loop):
+    return _wrap_deta_base_async(loop, MockDetaBase())
 
 
 class MockDetaBase:

@@ -6,9 +6,26 @@ from pydantic import UUID4
 
 from fastapi_users.db.base import BaseUserDatabase
 from fastapi_users.models import UD
-from fastapi_users_db_deta_base import deta_base_async
 
 __version__ = "0.0.0"
+
+
+async def looped_fetch(fetch, query):
+    """using the async fetch method of a deta Base instance return the first
+    match of the specified query, or None if no match is found.
+
+    :param fetch: async fetch method
+    :param query: query object for which to fetch results
+    :return: value matching the query or None
+    """
+    last = None
+    while True:
+        res = await fetch(query, last)
+        if res.count > 0:
+            return res.items[0]
+        if not res.last:
+            return None
+        last = res.last
 
 
 class DetaBaseUserDatabase(BaseUserDatabase[UD]):
@@ -30,7 +47,7 @@ class DetaBaseUserDatabase(BaseUserDatabase[UD]):
 
     async def get_by_email(self, email: str) -> Optional[UD]:
         """Get a single user by email."""
-        user = await deta_base_async.looped_fetch(
+        user = await looped_fetch(
             self.async_deta_base.fetch, query={"email": email.lower()}
         )
 
@@ -38,7 +55,7 @@ class DetaBaseUserDatabase(BaseUserDatabase[UD]):
 
     async def get_by_oauth_account(self, oauth: str, account_id: str) -> Optional[UD]:
         """Get a single user by OAuth account id."""
-        user = await deta_base_async.looped_fetch(
+        user = await looped_fetch(
             self.async_deta_base.fetch,
             query={
                 "oauth_accounts.oauth_name": oauth,

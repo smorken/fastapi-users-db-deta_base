@@ -3,32 +3,60 @@ from typing import AsyncGenerator
 import pytest
 import asyncio
 
+from types import SimpleNamespace
+import fastapi_users_db_deta_base
 from fastapi_users_db_deta_base import DetaBaseUserDatabase
-from fastapi_users_db_deta_base import deta_base_async
-from tests.mock_deta_base import MockDetaBase
+from tests import mock_deta_base
 from tests.conftest import UserDB, UserDBOAuth
+
+
+async def test_looped_fetch_no_match():
+    def mocked_fetch(query, last):
+        if last is None:
+            return SimpleNamespace(count=0, items=[], last=1)
+        elif last == 1:
+            return SimpleNamespace(count=0, items=[], last=None)
+
+    loop = asyncio.get_event_loop()
+    result1 = await fastapi_users_db_deta_base.looped_fetch(
+        lambda query, last: loop.run_in_executor(
+            None, mocked_fetch, query, last), {})
+    assert result1 is None
+
+
+@pytest.mark.asyncio
+async def test_looped_fetch_single_match():
+    def mocked_fetch(query, last):
+        if last is None:
+            return SimpleNamespace(count=0, items=[], last=1)
+        elif last == 1:
+            return SimpleNamespace(count=1, items=["match!"], last=2)
+        elif last == 2:
+            return SimpleNamespace(
+                count=1, items=["2nd match"], last=None  # wont match
+            )
+
+    loop = asyncio.get_event_loop()
+    result1 = await fastapi_users_db_deta_base.looped_fetch(
+        lambda query, last: loop.run_in_executor(
+            None, mocked_fetch, query, last), {})
+    assert result1 == "match!"
 
 
 @pytest.fixture
 async def deta_base_user_db() -> AsyncGenerator[DetaBaseUserDatabase, None]:
     loop = asyncio.get_event_loop()
-    yield await deta_base_async.wrap_async(
-        loop,
-        lambda: DetaBaseUserDatabase(
-            UserDB, deta_base_async.wrap_deta_base_async(loop, MockDetaBase())
-        ),
-    )()
+    yield await loop.run_in_executor(
+        None, lambda: DetaBaseUserDatabase(
+            UserDB, mock_deta_base.get_async_mock_deta_base(loop)))
 
 
 @pytest.fixture
 async def deta_base_user_db_oauth() -> AsyncGenerator[DetaBaseUserDatabase, None]:
     loop = asyncio.get_event_loop()
-    yield await deta_base_async.wrap_async(
-        loop,
-        lambda: DetaBaseUserDatabase(
-            UserDBOAuth, deta_base_async.wrap_deta_base_async(loop, MockDetaBase())
-        ),
-    )()
+    yield await loop.run_in_executor(
+        None, lambda: DetaBaseUserDatabase(
+            UserDBOAuth, mock_deta_base.get_async_mock_deta_base(loop)))
 
 
 @pytest.mark.asyncio

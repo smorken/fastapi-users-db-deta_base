@@ -10,6 +10,7 @@ from tests import mock_deta_base
 from tests.conftest import UserDB, UserDBOAuth
 
 
+@pytest.mark.asyncio
 async def test_looped_fetch_no_match():
     def mocked_fetch(query, last):
         if last is None:

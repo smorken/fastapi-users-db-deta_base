@@ -20,7 +20,7 @@ async def looped_fetch(fetch, query):
     """
     last = None
     while True:
-        res = await fetch(query, last)
+        res = await fetch(query=query, last=last)
         if res.count > 0:
             return res.items[0]
         if not res.last:
@@ -42,7 +42,7 @@ class DetaBaseUserDatabase(BaseUserDatabase[UD]):
 
     async def get(self, id: UUID4) -> Optional[UD]:
         """Get a single user by id."""
-        user = await self.async_deta_base.get(id)
+        user = await self.async_deta_base.get(key=id)
         return self.user_db_model(**user) if user else None
 
     async def get_by_email(self, email: str) -> Optional[UD]:
